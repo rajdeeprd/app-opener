@@ -54,25 +54,38 @@ export async function registerRoutes(
           <title>${title}</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f4f5; }
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f4f5; text-align: center; padding: 20px; }
             .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            h1 { font-size: 1.2rem; color: #18181b; }
-            p { color: #71717a; font-size: 0.9rem; }
+            h1 { font-size: 1.2rem; color: #18181b; margin-bottom: 10px; }
+            p { color: #71717a; font-size: 0.9rem; margin-bottom: 20px; }
+            .btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 10px; }
           </style>
         </head>
         <body>
           <div class="loader"></div>
           <h1>Opening in App...</h1>
-          <p>If the app doesn't open, <a href="${fallbackUrl}">click here</a>.</p>
+          <p>If it doesn't open automatically, click the button below:</p>
+          <a href="${deepLink}" class="btn" id="open-btn">Open in App</a>
+          <p>If you still see this screen, click the three dots in the top right and select <b>"Open in Browser"</b>.</p>
+          
           <script>
-            // Try deep link first
-            window.location.href = "${deepLink}";
+            // Automatic attempt
+            function tryOpen() {
+              window.location.href = "${deepLink}";
+            }
+
+            // Multiple attempts
+            tryOpen();
+            setTimeout(tryOpen, 500);
+            setTimeout(tryOpen, 1000);
             
-            // Fallback to web URL after a short delay
+            // Final fallback to web after longer delay
             setTimeout(function() {
-              window.location.href = "${fallbackUrl}";
-            }, 2500);
+              if (confirm("Would you like to open the web version instead?")) {
+                window.location.href = "${fallbackUrl}";
+              }
+            }, 5000);
           </script>
         </body>
       </html>
