@@ -35,12 +35,14 @@ export async function registerRoutes(
 
     if (id.startsWith("yt_")) {
       const videoId = id.replace("yt_", "");
-      deepLink = `intent://www.youtube.com/watch?v=${videoId}#Intent;package=com.google.android.youtube;scheme=https;ST=android.intent.extra.TEXT;end`;
+      // Using a specialized direct market/intent link that is known to break out of IABs better
+      // For Android, we use a different intent structure that is more forceful
+      deepLink = `intent://www.youtube.com/watch?v=${videoId}#Intent;package=com.google.android.youtube;scheme=https;S.browser_fallback_url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${videoId};end`;
       fallbackUrl = `https://www.youtube.com/watch?v=${videoId}`;
       title = "Opening YouTube...";
     } else if (id.startsWith("ig_")) {
       const path = Buffer.from(id.replace("ig_", ""), 'base64').toString();
-      deepLink = `instagram://media?id=${path}`; // Simplified, or just use https for universal links
+      deepLink = `instagram://media?id=${path}`; 
       fallbackUrl = `https://www.instagram.com${path}`;
       title = "Opening Instagram...";
     } else {
@@ -70,22 +72,30 @@ export async function registerRoutes(
           <p>If you still see this screen, click the three dots in the top right and select <b>"Open in Browser"</b>.</p>
           
           <script>
-            // Automatic attempt
-            function tryOpen() {
-              window.location.href = "${deepLink}";
-            }
+            // The "Magic" redirect attempt
+            // Some IABs require a user gesture or a very specific timing
+            window.onload = function() {
+              // Try deep link immediately
+              location.href = "${deepLink}";
+              
+              // Try again with a slight delay
+              setTimeout(function() {
+                location.href = "${deepLink}";
+              }, 100);
 
-            // Multiple attempts
-            tryOpen();
-            setTimeout(tryOpen, 500);
-            setTimeout(tryOpen, 1000);
+              // If it's an iOS device, sometimes window.location works better
+              if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                window.location = "youtube://www.youtube.com/watch?v=${id.replace("yt_", "")}";
+              }
+            };
             
-            // Final fallback to web after longer delay
+            // Final fallback to web only after a long delay to give the app time to wake up
             setTimeout(function() {
-              if (confirm("Would you like to open the web version instead?")) {
+              // Only redirect to web if the page is still visible (meaning app didn't open)
+              if (!document.hidden) {
                 window.location.href = "${fallbackUrl}";
               }
-            }, 5000);
+            }, 3000);
           </script>
         </body>
       </html>
