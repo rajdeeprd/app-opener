@@ -39,36 +39,34 @@ export async function registerRoutes(
 
       switch (platform) {
         case "youtube": {
-          // Accept youtube.com/watch?v=VIDEO_ID, youtu.be/VIDEO_ID, youtube.com/shorts/VIDEO_ID
+          // Use youtube:// scheme for mobile deep linking
           let videoId = "";
           try {
             if (safeInput.includes("youtube.com/shorts/")) {
               videoId = safeInput.split("shorts/")[1].split("?")[0];
-              generatedLink = `https://www.youtube.com/shorts/${videoId}`;
             } else if (safeInput.includes("youtu.be/")) {
               videoId = safeInput.split("youtu.be/")[1].split("?")[0];
-              generatedLink = `https://www.youtube.com/watch?v=${videoId}`;
             } else if (safeInput.includes("v=")) {
               const urlObj = new URL(safeInput.startsWith("http") ? safeInput : `https://${safeInput}`);
               videoId = urlObj.searchParams.get("v") || "";
-              if (!videoId) throw new Error("No video ID");
-              generatedLink = `https://www.youtube.com/watch?v=${videoId}`;
             } else {
-               // Assume input IS the video ID if no URL structure found
                videoId = safeInput;
-               generatedLink = `https://www.youtube.com/watch?v=${videoId}`;
             }
           } catch (e) {
-             // Fallback if parsing fails but input looks like ID
              videoId = safeInput;
-             generatedLink = `https://www.youtube.com/watch?v=${videoId}`;
           }
           
-          if (!videoId || videoId.length < 5) { // Basic sanity check
+          if (!videoId || videoId.length < 5) {
              return res.status(400).json({ ok: false, error: "Invalid YouTube Video ID or URL" });
           }
           
-          notes = "Opens YouTube App directly to the video or shorts.";
+          // The youtube:// scheme is often blocked by in-app browsers, but it's the most direct.
+          // However, for Instagram/Facebook in-app browsers, they often require a specific redirect pattern
+          // or using a "universal link" which we are already doing with https://www.youtube.com...
+          // A better trick for in-app browsers is to use intent:// for Android or specifically formatted links.
+          // But to strictly answer the "app opener" requirement, we'll provide the deep link scheme.
+          generatedLink = `youtube://www.youtube.com/watch?v=${videoId}`;
+          notes = "This link uses the 'youtube://' app scheme to attempt to force open the app. Note: Some apps like Instagram may still block direct redirection.";
           break;
         }
 
