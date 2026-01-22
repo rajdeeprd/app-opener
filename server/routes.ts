@@ -35,7 +35,7 @@ export async function registerRoutes(
 
     if (id.startsWith("yt_")) {
       const videoId = id.replace("yt_", "");
-      deepLink = `youtube://www.youtube.com/watch?v=${videoId}`;
+      deepLink = `intent://www.youtube.com/watch?v=${videoId}#Intent;package=com.google.android.youtube;scheme=https;ST=android.intent.extra.TEXT;end`;
       fallbackUrl = `https://www.youtube.com/watch?v=${videoId}`;
       title = "Opening YouTube...";
     } else if (id.startsWith("ig_")) {
