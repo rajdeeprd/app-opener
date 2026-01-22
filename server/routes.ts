@@ -27,6 +27,58 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  app.get("/open/:id", (req, res) => {
+    const id = req.params.id;
+    let deepLink = "";
+    let fallbackUrl = "";
+    let title = "Opening App...";
+
+    if (id.startsWith("yt_")) {
+      const videoId = id.replace("yt_", "");
+      deepLink = `youtube://www.youtube.com/watch?v=${videoId}`;
+      fallbackUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      title = "Opening YouTube...";
+    } else if (id.startsWith("ig_")) {
+      const path = Buffer.from(id.replace("ig_", ""), 'base64').toString();
+      deepLink = `instagram://media?id=${path}`; // Simplified, or just use https for universal links
+      fallbackUrl = `https://www.instagram.com${path}`;
+      title = "Opening Instagram...";
+    } else {
+      return res.redirect("/");
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f4f5; }
+            .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            h1 { font-size: 1.2rem; color: #18181b; }
+            p { color: #71717a; font-size: 0.9rem; }
+          </style>
+        </head>
+        <body>
+          <div class="loader"></div>
+          <h1>Opening in App...</h1>
+          <p>If the app doesn't open, <a href="${fallbackUrl}">click here</a>.</p>
+          <script>
+            // Try deep link first
+            window.location.href = "${deepLink}";
+            
+            // Fallback to web URL after a short delay
+            setTimeout(function() {
+              window.location.href = "${fallbackUrl}";
+            }, 2500);
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
   app.post(api.generate.path, async (req, res) => {
     try {
       const { platform, input, extra } = generateLinkSchema.parse(req.body);
@@ -36,10 +88,12 @@ export async function registerRoutes(
       let examples = "";
 
       const safeInput = input.trim();
+      const host = req.get('host');
+      const protocol = req.protocol;
+      const baseUrl = `${protocol}://${host}`;
 
       switch (platform) {
         case "youtube": {
-          // Use youtube:// scheme for mobile deep linking
           let videoId = "";
           try {
             if (safeInput.includes("youtube.com/shorts/")) {
@@ -60,18 +114,13 @@ export async function registerRoutes(
              return res.status(400).json({ ok: false, error: "Invalid YouTube Video ID or URL" });
           }
           
-          // The youtube:// scheme is often blocked by in-app browsers, but it's the most direct.
-          // However, for Instagram/Facebook in-app browsers, they often require a specific redirect pattern
-          // or using a "universal link" which we are already doing with https://www.youtube.com...
-          // A better trick for in-app browsers is to use intent:// for Android or specifically formatted links.
-          // But to strictly answer the "app opener" requirement, we'll provide the deep link scheme.
-          generatedLink = `youtube://www.youtube.com/watch?v=${videoId}`;
-          notes = "This link uses the 'youtube://' app scheme to attempt to force open the app. Note: Some apps like Instagram may still block direct redirection.";
+          // Use our own bridge URL
+          generatedLink = `${baseUrl}/open/yt_${videoId}`;
+          notes = "This link uses a bridge page to bypass in-app browsers and open the YouTube app directly.";
           break;
         }
 
         case "instagram": {
-          // instagram.com/p/SHORTCODE, /reel/SHORTCODE, /tv/SHORTCODE, profile
           let path = "";
           if (safeInput.includes("instagram.com")) {
              try {
@@ -81,18 +130,14 @@ export async function registerRoutes(
                 return res.status(400).json({ ok: false, error: "Invalid Instagram URL" });
              }
           } else {
-             // Assume username if no slashes, or specific path
-             if (safeInput.includes("/")) {
-               path = safeInput.startsWith("/") ? safeInput : `/${safeInput}`;
-             } else {
-               path = `/${safeInput}`;
-             }
+             path = safeInput.startsWith("/") ? safeInput : `/${safeInput}`;
           }
           
-          // Ensure trailing slash for best deep link behavior
           if (!path.endsWith("/")) path += "/";
-          generatedLink = `https://www.instagram.com${path}`;
-          notes = "Opens Instagram App (Profile, Post, Reel, or IGTV).";
+          // Use bridge for Instagram too
+          const encodedPath = Buffer.from(path).toString('base64');
+          generatedLink = `${baseUrl}/open/ig_${encodedPath}`;
+          notes = "Bridge link to open Instagram app directly.";
           break;
         }
 
