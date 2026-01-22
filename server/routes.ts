@@ -66,36 +66,46 @@ export async function registerRoutes(
         </head>
         <body>
           <div class="loader"></div>
-          <h1>Opening in App...</h1>
-          <p>If it doesn't open automatically, click the button below:</p>
-          <a href="${deepLink}" class="btn" id="open-btn">Open in App</a>
-          <p>If you still see this screen, click the three dots in the top right and select <b>"Open in Browser"</b>.</p>
+          <h1 id="timer">Opening in 5 seconds...</h1>
+          <p>Please wait while we prepare your link.</p>
+          <a href="${deepLink}" class="btn" id="open-btn">Open in App Now</a>
+          <p>If you still see this screen after 5 seconds, click the three dots in the top right and select <b>"Open in Browser"</b>.</p>
           
           <script>
-            // The "Magic" redirect attempt
-            // Some IABs require a user gesture or a very specific timing
-            window.onload = function() {
-              // Try deep link immediately
-              location.href = "${deepLink}";
-              
-              // Try again with a slight delay
-              setTimeout(function() {
-                location.href = "${deepLink}";
-              }, 100);
+            let timeLeft = 5;
+            const timerElement = document.getElementById('timer');
+            const openBtn = document.getElementById('open-btn');
 
-              // If it's an iOS device, sometimes window.location works better
-              if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                window.location = "youtube://www.youtube.com/watch?v=${id.replace("yt_", "")}";
+            function updateTimer() {
+              if (timeLeft > 0) {
+                timerElement.innerText = "Opening in " + timeLeft + " seconds...";
+                timeLeft--;
+                setTimeout(updateTimer, 1000);
+              } else {
+                timerElement.innerText = "Redirecting now...";
+                // The "Magic" redirect attempt
+                location.href = "${deepLink}";
+                
+                // Try again with a slight delay
+                setTimeout(function() {
+                  location.href = "${deepLink}";
+                }, 100);
+
+                // If it's an iOS device, sometimes window.location works better
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                  window.location = "youtube://www.youtube.com/watch?v=${id.replace("yt_", "")}";
+                }
+                
+                // Final fallback to web only after a long delay to give the app time to wake up
+                setTimeout(function() {
+                  if (!document.hidden) {
+                    window.location.href = "${fallbackUrl}";
+                  }
+                }, 3000);
               }
-            };
-            
-            // Final fallback to web only after a long delay to give the app time to wake up
-            setTimeout(function() {
-              // Only redirect to web if the page is still visible (meaning app didn't open)
-              if (!document.hidden) {
-                window.location.href = "${fallbackUrl}";
-              }
-            }, 3000);
+            }
+
+            window.onload = updateTimer;
           </script>
         </body>
       </html>
