@@ -62,10 +62,20 @@ export async function registerRoutes(
             h1 { font-size: 1.2rem; color: #18181b; margin-bottom: 10px; }
             p { color: #71717a; font-size: 0.9rem; margin-bottom: 20px; }
             .btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-bottom: 10px; }
+            .ad-container { width: 100%; max-width: 336px; height: 280px; background: #fff; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 20px 0; border-radius: 8px; overflow: hidden; }
+            .ad-label { font-size: 0.7rem; color: #a1a1aa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
           </style>
         </head>
         <body>
-          <div class="loader"></div>
+          <div class="ad-label">Advertisement</div>
+          <div class="ad-container">
+            <!-- Placeholder for Ad Sense or other Ad network -->
+            <div style="color: #a1a1aa; font-size: 0.9rem;">
+              Your Ad Here<br>
+              <small>(336 x 280)</small>
+            </div>
+          </div>
+
           <h1 id="timer">Opening in 5 seconds...</h1>
           <p>Please wait while we prepare your link.</p>
           <a href="${deepLink}" class="btn" id="open-btn">Open in App Now</a>
