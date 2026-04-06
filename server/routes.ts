@@ -21,10 +21,7 @@ function cleanPhone(phone: string): string {
   return hasPlus ? "+" + digits : digits;
 }
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
+export async function registerRoutes(app: Express) {
   
   app.get("/open/:id", (req, res) => {
     const id = req.params.id;
