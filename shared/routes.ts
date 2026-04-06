@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { generateLinkSchema, generateLinkResponseSchema } from "./schema";
+import { generateLinkSchema, generateLinkResponseSchema } from "./schema.js";
 
 export const api = {
   generate: {
