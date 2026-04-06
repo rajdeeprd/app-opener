@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { api } from "../shared/routes";
+import { api } from "../shared/routes.js";
 import { z } from "zod";
-import { generateLinkSchema } from "../shared/schema";
+import { generateLinkSchema } from "../shared/schema.js";
 
 // Helper functions
 function isValidUrl(s: string): boolean {
